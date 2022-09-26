@@ -160,20 +160,32 @@ kotlin {
 
     val windowsTest by getting
   }
+
+  val publicationsFromMainHost =
+    listOf(jvm("desktop"), js(IR), android()).map { it.name } + "kotlinMultiplatform"
+
+  publishing {
+    publications {
+      matching { it.name in publicationsFromMainHost }.all {
+        val targetPublication = this@all
+        tasks.withType<AbstractPublishToMaven>()
+          .matching { it.publication == targetPublication }
+          .configureEach { onlyIf {
+            System.getProperty("os.name").startsWith("Linux")
+          } }
+      }
+    }
+  }
 }
 
 publishing {
   repositories {
     maven {
-      val isSnapshot = version.toString().endsWith("SNAPSHOT")
-      url = uri(
-        if (!isSnapshot) "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2"
-        else "https://s01.oss.sonatype.org/content/repositories/snapshots"
-      )
-
+      name = "Space"
+      url = uri("https://packages.jetbrains.team/maven/p/kmp-publish-research/kmp-publish-research")
       credentials {
-        username = gradleLocalProperties(rootDir).getProperty("sonatypeUsername")
-        password = gradleLocalProperties(rootDir).getProperty("sonatypePassword")
+        username = System.getenv("S_NAME")
+        password = System.getenv("S_KEY")
       }
     }
   }
